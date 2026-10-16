@@ -1,0 +1,8 @@
+Revenue by customer (paid orders):
+  linus    1490
+  grace     385
+  ada       160
+
+Best sellers: [["mouse", 2], ["cable", 2]]
+Unpaid order ids: [3]
+Whale alert: order 4 by linus

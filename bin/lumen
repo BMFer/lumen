@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Run Lumen from a checkout without installing it.
+here="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
+PYTHONPATH="$here${PYTHONPATH:+:$PYTHONPATH}" exec python3 -m lumen "$@"

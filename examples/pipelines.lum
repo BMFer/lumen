@@ -1,0 +1,38 @@
+# Data wrangling with pipelines, destructuring and grouping.
+
+let orders = [
+  {id: 1, customer: "ada",   items: [["keyboard", 120], ["mouse", 40]], paid: true},
+  {id: 2, customer: "grace", items: [["monitor", 310]],                  paid: true},
+  {id: 3, customer: "ada",   items: [["cable", 9], ["cable", 9]],        paid: false},
+  {id: 4, customer: "linus", items: [["laptop", 1450], ["mouse", 40]],   paid: true},
+  {id: 5, customer: "grace", items: [["webcam", 75]],                    paid: true},
+]
+
+fn order_total(order) {
+  order.items |> map(fn([_, price]) => price) |> sum
+}
+
+let paid = orders |> filter(fn(o) => o.paid)
+
+print("Revenue by customer (paid orders):")
+paid
+  |> group_by(fn(o) => o.customer)
+  |> entries
+  |> map(fn([name, os]) => [name, os |> map(order_total) |> sum])
+  |> sort(fn([_, total]) => -total)
+  |> each(fn([name, total]) => print("  {pad_right(name, 6)} {pad_left(total, 6)}"))
+
+let products = orders
+  |> map(fn(o) => o.items)
+  |> flatten
+  |> map(fn([product, _]) => product)
+
+print()
+print("Best sellers:", products |> tally |> entries |> sort(fn([_, n]) => -n) |> take(2))
+print("Unpaid order ids:", orders.reject(fn(o) => o.paid).map(fn({id}) => id))
+
+let biggest = orders |> sort(order_total) |> reverse |> get(0)
+match biggest {
+  {customer, id} if order_total(biggest) > 1000 => print("Whale alert: order {id} by {customer}")
+  _ => print("No big orders today")
+}

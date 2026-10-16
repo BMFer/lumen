@@ -1,0 +1,52 @@
+# A quick tour of Lumen.
+
+# Values and string interpolation
+let name = "Lumen"
+let version = [1, 0]
+print("Hello from {name} v{version.join(".")}!")
+
+# Everything is an expression -- including `if` and `match`
+fn fizzbuzz(n) {
+  match [n % 3, n % 5] {
+    [0, 0] => "FizzBuzz"
+    [0, _] => "Fizz"
+    [_, 0] => "Buzz"
+    _ => str(n)
+  }
+}
+print((1..=15).map(fizzbuzz).join(" "))
+
+# Closures keep their own state
+fn make_counter() {
+  let count = 0
+  fn() {
+    count += 1
+    count
+  }
+}
+let tick = make_counter()
+tick(); tick()
+print("counter is at", tick())
+
+# Pipelines read top to bottom; `x.f(a)` is the same as `f(x, a)`
+let primes = 2..60
+  |> filter(fn(n) => (2..n).all(fn(d) => n % d != 0 or d * d > n))
+print("primes:", primes)
+
+# Destructuring works in let, for, match and function parameters
+let [first, second, ..rest] = primes
+print("first two: {first}, {second}; {len(rest)} more")
+
+let points = [[0, 0], [3, 4], [-6, 8]]
+for [x, y] in points {
+  print("  ({x}, {y}) is {sqrt(x * x + y * y)} from the origin")
+}
+
+# Quicksort in three lines
+fn quicksort(xs) {
+  match xs {
+    [] => []
+    [pivot, ..rest] => quicksort(rest.filter(fn(x) => x < pivot)) + [pivot] + quicksort(rest.filter(fn(x) => x >= pivot))
+  }
+}
+print("sorted:", quicksort([5, 3, 9, 1, 5, 0, 7]))

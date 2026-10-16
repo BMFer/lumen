@@ -1,0 +1,159 @@
+# A calculator written in Lumen: tokenizer, recursive-descent parser and
+# evaluator. The AST is plain lists like ["add", left, right], which makes
+# the evaluator a single `match`.
+
+fn tokenize(src) {
+  let tokens = []
+  let i = 0
+  while i < len(src) {
+    let c = src[i]
+    if c == " " {
+      i += 1
+    } else if is_digit(c) {
+      let start = i
+      while i < len(src) and (is_digit(src[i]) or src[i] == ".") { i += 1 }
+      let text = src[start..i]
+      push(tokens, ["num", if contains(text, ".") { float(text) } else { int(text) }])
+    } else if is_alpha(c) {
+      let start = i
+      while i < len(src) and is_alpha(src[i]) { i += 1 }
+      push(tokens, ["name", src[start..i]])
+    } else if contains("+-*/^()", c) {
+      push(tokens, ["op", c])
+      i += 1
+    } else {
+      error("unexpected character '{c}' at position {i}")
+    }
+  }
+  tokens
+}
+
+# Parser state lives in a map so the nested functions can share it.
+fn parse(src) {
+  let p = {tokens: tokenize(src), pos: 0}
+
+  fn peek() { get(p.tokens, p.pos) }
+  fn next() {
+    let tok = peek()
+    p.pos += 1
+    tok
+  }
+  fn is_op(op) {
+    match peek() {
+      ["op", o] => o == op
+      _ => false
+    }
+  }
+
+  # expr  := term (('+' | '-') term)*
+  # term  := unary (('*' | '/') unary)*
+  # unary := '-' unary | power          -- so -2^2 is -(2^2), as in math
+  # power := atom ('^' unary)?          -- right-associative: 2^3^2 is 2^(3^2)
+  # atom  := number | name | name '(' expr ')' | '(' expr ')'
+  fn expr() {
+    let left = term()
+    while is_op("+") or is_op("-") {
+      let [_, op] = next()
+      left = [if op == "+" { "add" } else { "sub" }, left, term()]
+    }
+    left
+  }
+  fn term() {
+    let left = unary()
+    while is_op("*") or is_op("/") {
+      let [_, op] = next()
+      left = [if op == "*" { "mul" } else { "div" }, left, unary()]
+    }
+    left
+  }
+  fn unary() {
+    if is_op("-") {
+      next()
+      return ["neg", unary()]
+    }
+    power()
+  }
+  fn power() {
+    let base = atom()
+    if is_op("^") {
+      next()
+      return ["pow", base, unary()]
+    }
+    base
+  }
+  fn atom() {
+    match next() {
+      ["num", n] => ["num", n]
+      ["name", name] => {
+        if is_op("(") {
+          next()
+          let arg = expr()
+          expect(")")
+          ["call", name, arg]
+        } else {
+          ["var", name]
+        }
+      }
+      ["op", "("] => {
+        let inner = expr()
+        expect(")")
+        inner
+      }
+      nil => error("unexpected end of expression")
+      [_, tok] => error("unexpected '{tok}'")
+    }
+  }
+  fn expect(op) {
+    if not is_op(op) { error("expected '{op}'") }
+    next()
+  }
+
+  let tree = expr()
+  if peek() != nil { error("unexpected '{peek()[1]}' after expression") }
+  tree
+}
+
+let constants = {pi: PI, e: E}
+let functions = {sqrt: sqrt, abs: abs, floor: floor}
+
+fn evaluate(node) {
+  match node {
+    ["num", n] => n
+    ["var", name] => get(constants, name) or error("unknown constant '{name}'")
+    ["neg", x] => -evaluate(x)
+    ["add", a, b] => evaluate(a) + evaluate(b)
+    ["sub", a, b] => evaluate(a) - evaluate(b)
+    ["mul", a, b] => evaluate(a) * evaluate(b)
+    ["div", a, b] => evaluate(a) / evaluate(b)
+    ["pow", a, b] => evaluate(a) ** evaluate(b)
+    ["call", name, arg] => {
+      let f = get(functions, name) or error("unknown function '{name}'")
+      f(evaluate(arg))
+    }
+  }
+}
+
+fn show_tree(node) {
+  match node {
+    ["num", n] => str(n)
+    ["var", name] => name
+    ["neg", x] => "(-{show_tree(x)})"
+    ["call", name, arg] => "{name}({show_tree(arg)})"
+    [op, a, b] => "({op} {show_tree(a)} {show_tree(b)})"
+  }
+}
+
+let inputs = [
+  "1 + 2 * 3",
+  "(1 + 2) * 3",
+  "2 ^ 3 ^ 2",
+  "-2 ^ 2",
+  "2 ^ -1",
+  "sqrt(16) + abs(-2.5)",
+  "2 * pi * 10",
+]
+
+for src in inputs {
+  let tree = parse(src)
+  print(pad_right(src, 22), "=>", pad_right(show_tree(tree), 32), "=", round(evaluate(tree), 4))
+}

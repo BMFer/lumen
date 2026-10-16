@@ -1,0 +1,46 @@
+# Conway's Game of Life on a small wrapping board.
+
+let width = 20
+let height = 10
+
+fn make_board(live_cells) {
+  let board = range(height).map(fn(_) => [false] * width)
+  for [x, y] in live_cells { board[y][x] = true }
+  board
+}
+
+fn neighbours(board, x, y) {
+  let n = 0
+  for dy in -1..=1 {
+    for dx in -1..=1 {
+      if dx == 0 and dy == 0 { continue }
+      if board[(y + dy) % height][(x + dx) % width] { n += 1 }
+    }
+  }
+  n
+}
+
+fn step(board) {
+  range(height).map(fn(y) => range(width).map(fn(x) {
+    match [board[y][x], neighbours(board, x, y)] {
+      [true, 2] | [true, 3] => true
+      [false, 3] => true
+      _ => false
+    }
+  }))
+}
+
+fn render(board) {
+  board.map(fn(row) => row.map(fn(alive) => if alive { "█" } else { "·" }).join()).join("\n")
+}
+
+let glider = [[1, 0], [2, 1], [0, 2], [1, 2], [2, 2]]
+let blinker = [[12, 4], [13, 4], [14, 4]]
+let board = make_board(glider + blinker)
+
+for generation in 0..4 {
+  print("generation {generation}:")
+  print(render(board))
+  print()
+  board = step(board)
+}
