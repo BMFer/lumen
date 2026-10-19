@@ -29,6 +29,50 @@ runtime error: can't add string and int
   = hint: convert with str(x), or interpolate: "total: {x}"
 ```
 
+## Why Lumen?
+
+Lumen is mainly a language to learn from, and a pleasant one for small
+scripts. It is not trying to replace Python or JavaScript.
+
+**You can read all of it.** The whole implementation is a lexer, a Pratt
+parser, an AST and a tree-walking interpreter, in a handful of short files.
+These are the same techniques full-size languages use: operator precedence,
+closures and lexical scope, pattern matching, and a REPL that knows when
+input is unfinished. Adding an operator, a builtin or a new piece of syntax
+is a realistic weekend project, and the test suite tells you if you broke
+something.
+
+**The errors teach.** Diagnostics point at the exact source span and usually
+suggest a fix. They catch misspelled names, habits from other languages and
+easy-to-miss bugs like `1 < x < 3`. That makes Lumen friendly for beginners,
+and a useful reference if you are designing error messages yourself (see
+[Errors](#errors)).
+
+**It suits short data transformations.** Pipelines, pattern matching,
+destructuring and expression-valued `if`/`match` keep data wrangling compact.
+`examples/pipelines.lum` answers four questions about a list of orders in
+about 30 lines.
+
+**Bad input can't crash it.** Bad or hostile programs produce ordinary Lumen
+errors, never a hang or a Python traceback. That makes it reasonable for
+running untrusted code such as student submissions or a playground.
+
+**Where it stops:**
+
+- **Speed:** it is a tree-walking interpreter running on Python, so
+  `fib(25)` takes about half a second. That is fine for scripts and too slow
+  for heavy computation.
+- **Libraries:** there are about 60 builtins and no module system, file
+  access or networking.
+- **Tooling:** there is no editor support, debugger or package ecosystem.
+
+| Good for | Look elsewhere for |
+|---|---|
+| Learning how languages work | Production software |
+| Teaching programming | Performance-sensitive work |
+| Experimenting with language features | Anything needing libraries, files or networking |
+| Small data-transformation scripts | Team projects that need tooling and support |
+
 ## Getting started
 
 Lumen needs Python 3.10 or newer.
